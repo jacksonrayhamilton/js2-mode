@@ -11704,22 +11704,6 @@ Selecting an error will jump it to the corresponding source-buffer error.
         (goto-char pos)
         (message msg))))))
 
-;; In Emacs >=27, this is needed for JSX indentation and highlighting.
-(defun js2-syntax-propertize (start end)
-  "Apply syntax properties from START to END."
-  (goto-char start)
-  (when (and
-         (boundp 'js-jsx--text-properties)
-         (bound-and-true-p js-jsx-syntax))
-    (remove-text-properties start end js-jsx--text-properties))
-  (funcall
-   (syntax-propertize-rules
-    ("<" (0 (ignore (when (and
-                           (fboundp 'js-jsx--syntax-propertize-tag)
-                           (bound-and-true-p js-jsx-syntax))
-                      (js-jsx--syntax-propertize-tag end))))))
-   (point) end))
-
 ;; In Emacs >=27, this is needed for JSX highlighting.
 (defconst js2--font-lock-keywords
   `(,@(bound-and-true-p js-jsx--font-lock-keywords))
@@ -11741,8 +11725,6 @@ Selecting an error will jump it to the corresponding source-buffer error.
        (max max-lisp-eval-depth 3000))
   (set (make-local-variable 'indent-line-function) #'js2-indent-line)
   (set (make-local-variable 'indent-region-function) #'js2-indent-region)
-  (set (make-local-variable 'syntax-propertize-function)
-       (if (boundp 'js-jsx-syntax) #'js2-syntax-propertize nil))
   (set (make-local-variable 'comment-line-break-function) #'js2-line-break)
   (set (make-local-variable 'beginning-of-defun-function) #'js2-beginning-of-defun)
   (set (make-local-variable 'end-of-defun-function) #'js2-end-of-defun)
