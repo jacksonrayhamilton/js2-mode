@@ -1,10 +1,11 @@
 ;;; js2-mode.el --- Improved JavaScript editing mode -*- lexical-binding: t -*-
 
-;; Copyright (C) 2009, 2011-2018  Free Software Foundation, Inc.
+;; Copyright (C) 2009-2019  Free Software Foundation, Inc.
 
 ;; Author: Steve Yegge <steve.yegge@gmail.com>
 ;;         mooz <stillpedant@gmail.com>
 ;;         Dmitry Gutov <dgutov@yandex.ru>
+;; Maintainer: Dmitry Gutov <dgutov@yandex.ru>
 ;; URL:  https://github.com/mooz/js2-mode/
 ;;       http://code.google.com/p/js2-mode/
 ;; Version: 20190219
@@ -6347,8 +6348,6 @@ its relevant fields and puts it into `js2-ti-tokens'."
         flags
         (continue t)
         (token (js2-new-token 0)))
-    (js2-record-text-property start-pos (1+ start-pos)
-                              'syntax-table (string-to-syntax "\"/"))
     (setq js2-ts-string-buffer nil)
     (if (eq start-tt js2-ASSIGN_DIV)
         ;; mis-scanned /=
@@ -6375,8 +6374,6 @@ its relevant fields and puts it into `js2-ti-tokens'."
             (setq in-class nil)))
           (js2-add-to-string c))))
     (unless err
-      (js2-record-text-property (1- js2-ts-cursor) js2-ts-cursor
-                                'syntax-table (string-to-syntax "\"/"))
       (while continue
         (cond
          ((js2-match-char ?g)
@@ -11507,6 +11504,8 @@ If so, we don't ever want to use bounce-indent."
   (let (parse-status offset indent-col
         ;; Don't whine about errors/warnings when we're indenting.
         ;; This has to be set before calling parse-partial-sexp below.
+        ;; FIXME: Which code would whine about errors/warnings if we
+        ;; don't put this binding?
         (inhibit-point-motion-hooks t))
     (setq parse-status (save-excursion
                          (syntax-ppss (point-at-bol)))
@@ -11747,9 +11746,6 @@ Selecting an error will jump it to the corresponding source-buffer error.
   (set (make-local-variable 'comment-line-break-function) #'js2-line-break)
   (set (make-local-variable 'beginning-of-defun-function) #'js2-beginning-of-defun)
   (set (make-local-variable 'end-of-defun-function) #'js2-end-of-defun)
-  ;; We un-confuse `parse-partial-sexp' by setting syntax-table properties
-  ;; for characters inside regexp literals.
-  (set (make-local-variable 'parse-sexp-lookup-properties) t)
   ;; this is necessary to make `show-paren-function' work properly
   (set (make-local-variable 'parse-sexp-ignore-comments) t)
   ;; needed for M-x rgrep, among other things
@@ -11913,10 +11909,6 @@ buffer will only rebuild its `js2-mode-ast' if the buffer is dirty."
                          (catch 'interrupted
                            (js2-parse)
                            (with-silent-modifications
-                             ;; if parsing is interrupted, comments and regex
-                             ;; literals stay ignored by `parse-partial-sexp'
-                             (remove-text-properties (point-min) (point-max)
-                                                     '(syntax-table))
                              (js2-mode-apply-deferred-properties)
                              (js2-mode-remove-suppressed-warnings)
                              (js2-mode-show-warnings)
